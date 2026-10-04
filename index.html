@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BorcPay - Borc Bölüs</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Font: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#6366f1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js');
+  }
+</script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    /* Özel kaydırma çubuğu */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- Üst Başlık & Aksiyon Çubuğu -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold text-slate-900 tracking-tight leading-none">BorcPay</h1>
+          <p class="text-xs text-slate-500 mt-0.5">Kolay Alışveriş ve Borç Takası</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button id="btnSampleData" type="button" class="text-xs sm:text-sm px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 transition-colors">
+          Örnek Yükle
+        </button>
+        <button id="btnClearAll" type="button" class="text-xs sm:text-sm px-3 py-1.5 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 transition-colors">
+          Sıfırla
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- Genel İstatistik Kartları -->
+    <section class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Toplam Harcama</span>
+          <h3 id="statTotalExpense" class="text-2xl font-bold text-slate-900 mt-1">₺0,00</h3>
+        </div>
+        <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl">
+          🧾
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Kişi Sayısı</span>
+          <h3 id="statTotalPeople" class="text-2xl font-bold text-slate-900 mt-1">0</h3>
+        </div>
+        <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+          👥
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Ürün / Masraf Kalemi</span>
+          <h3 id="statTotalItems" class="text-2xl font-bold text-slate-900 mt-1">0</h3>
+        </div>
+        <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
+          🛍️
+        </div>
+      </div>
+    </section>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- Sol Sütun: Kişi ve Ürün Ekleme (5 Sütun) -->
+      <div class="lg:col-span-5 space-y-6">
+
+        <!-- Kişi Yönetimi Paneli -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="font-semibold text-slate-900 flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
+              Gruptaki Kişiler
+            </h2>
+            <span id="badgePeopleCount" class="text-xs font-medium bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">0 kişi</span>
+          </div>
+
+          <!-- Kişi Ekle Formu -->
+          <form id="personForm" class="flex gap-2">
+            <input 
+              id="personNameInput" 
+              type="text" 
+              placeholder="Örn: Ahmet, Ayşe..." 
+              required
+              class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
+            />
+            <button 
+              type="submit" 
+              class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl text-sm transition-colors flex items-center gap-1 shadow-sm">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              Ekle
+            </button>
+          </form>
+
+          <!-- Kişi Listesi (Rozetler) -->
+          <div id="peopleListContainer" class="flex flex-wrap gap-2 pt-1 min-h-[40px]">
+            <!-- Dinamik doldurulacak -->
+          </div>
+        </div>
+
+        <!-- Harcama / Ürün Ekleme Paneli -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+          <h2 class="font-semibold text-slate-900 flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            Yeni Harcama / Ürün Ekle
+          </h2>
+
+          <form id="expenseForm" class="space-y-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1">Ürün / Masraf Başlığı</label>
+              <input 
+                id="itemTitle" 
+                type="text" 
+                placeholder="Örn: Market alışverişi, Pizza, İçecekler" 
+                required
+                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
+              />
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-medium text-slate-700 mb-1">Tutar (₺)</label>
+                <div class="relative">
+                  <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-medium text-sm">₺</span>
+                  <input 
+                    id="itemAmount" 
+                    type="number" 
+                    step="0.01" 
+                    min="0.01" 
+                    placeholder="0.00" 
+                    required
+                    class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-slate-700 mb-1">Hesabı Kim Ödedi?</label>
+                <select 
+                  id="itemPayer" 
+                  required
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all">
+                  <option value="" disabled selected>Kişi Seçin</option>
+                  <!-- JS ile doldurulacak -->
+                </select>
+              </div>
+            </div>
+
+            <!-- Bu Ürüne Kimler Ortak? -->
+            <div class="pt-2 border-t border-slate-100">
+              <div class="flex items-center justify-between mb-2">
+                <label class="text-xs font-medium text-slate-700">Bu Ürüne Kimler Ortak?</label>
+                <div class="flex gap-2">
+                  <button type="button" id="btnSelectAllConsumers" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">Tümünü Seç</button>
+                  <span class="text-slate-300">|</span>
+                  <button type="button" id="btnClearConsumers" class="text-xs text-slate-500 hover:text-slate-700">Temizle</button>
+                </div>
+              </div>
+
+              <!-- Ortaklar Checkbox / Buton Listesi -->
+              <div id="consumerCheckboxes" class="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-1 bg-slate-50 rounded-xl border border-slate-200/80">
+                <!-- JS ile oluşturulacak -->
+              </div>
+              <p id="consumerHelpText" class="text-[11px] text-slate-400 mt-1.5">Kişi başına düşecek miktar seçilen ortaklar arasında eşit bölünecektir.</p>
+            </div>
+
+            <button 
+              type="submit" 
+              class="w-full py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-medium rounded-xl text-sm transition-all shadow-md shadow-indigo-100 flex items-center justify-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+              Harcamayı Listeye Ekle
+            </button>
+          </form>
+        </div>
+
+      </div>
+
+      <!-- Sağ Sütun: Alışveriş Kalemleri & Hesaplaşma Sonuçları (7 Sütun) -->
+      <div class="lg:col-span-7 space-y-6">
+
+        <!-- Harcama Kalemleri Listesi -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="font-semibold text-slate-900 flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+              Alınan Ürünler & Masraflar
+            </h2>
+            <span id="badgeExpenseCount" class="text-xs font-medium bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">0 kayıt</span>
+          </div>
+
+          <div id="expensesList" class="space-y-3 max-h-[360px] overflow-y-auto pr-1">
+            <!-- Dinamik doldurulacak -->
+          </div>
+        </div>
+
+        <!-- Hesaplaşma & Borç Sadeleştirme Planı -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-5">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <h2 class="font-semibold text-slate-900 flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-violet-600"></span>
+                Hesaplaşma & Ödeme Planı
+              </h2>
+              <p class="text-xs text-slate-500 mt-0.5">En az işlemle borçları kapatma yöntemi</p>
+            </div>
+          </div>
+
+          <!-- Kişi Bazlı Bakiye Durumu (Ödedi / Payı / Net Durum) -->
+          <div>
+            <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Bireysel Durum Tablosu</h4>
+            <div class="overflow-x-auto rounded-xl border border-slate-200">
+              <table class="w-full text-left text-xs sm:text-sm">
+                <thead class="bg-slate-50 text-slate-600 border-b border-slate-200 font-medium">
+                  <tr>
+                    <th class="py-2.5 px-3">Kişi</th>
+                    <th class="py-2.5 px-3 text-right">Ödediği</th>
+                    <th class="py-2.5 px-3 text-right">Düşen Pay</th>
+                    <th class="py-2.5 px-3 text-right">Net Durum</th>
+                  </tr>
+                </thead>
+                <tbody id="balancesTableBody" class="divide-y divide-slate-100">
+                  <!-- Dinamik doldurulacak -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Sadeleştirilmiş Transfer Planı (Kim Kime Ne Kadar Ödeyecek) -->
+          <div>
+            <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2.5">Borç Kapatma Transferleri</h4>
+            <div id="settlementsContainer" class="space-y-2">
+              <!-- Dinamik doldurulacak -->
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="mt-auto border-t border-slate-200 bg-white py-4 text-center text-xs text-slate-400">
+    MasrafPay &bull; Tüm veriler tarayıcınızın yerel hafızasında (LocalStorage) güvenle saklanır.
+  </footer>
+
+  <!-- Özel Bildirim Kutusu (Toast) -->
+  <div id="toast" class="fixed bottom-5 right-5 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none z-50 bg-slate-900 text-white text-sm px-4 py-3 rounded-xl shadow-xl flex items-center gap-2">
+    <span id="toastIcon">✨</span>
+    <span id="toastMessage">İşlem başarıyla gerçekleşti!</span>
+  </div>
+
+  <script>
+    // --- UYGULAMA VERİ MODELİ ---
+    const STORAGE_KEY = 'MASRAFPAY_DATA_V1';
+
+    let state = {
+      people: [], // { id: string, name: string }
+      expenses: [] // { id: string, title: string, amount: number, payerId: string, consumerIds: string[] }
+    };
+
+    // Rastgele ID üretici
+    function generateId() {
+      return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+    }
+
+    // Para formatlayıcı (₺)
+    function formatMoney(amount) {
+      return new Intl.NumberFormat('tr-TR', {
+        style: 'currency',
+        currency: 'TRY',
+        minimumFractionDigits: 2
+      }).format(amount || 0);
+    }
+
+    // LocalStorage'a kaydetme
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    // LocalStorage'dan yükleme
+    function loadState() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          state = JSON.parse(saved);
+        } catch (e) {
+          console.error("Kayıtlı veri okunamadı", e);
+        }
+      }
+    }
+
+    // Toast bildirimi gösterimi
+    function showToast(message, icon = '✓') {
+      const toast = document.getElementById('toast');
+      const toastMessage = document.getElementById('toastMessage');
+      const toastIcon = document.getElementById('toastIcon');
+
+      toastMessage.textContent = message;
+      toastIcon.textContent = icon;
+
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2500);
+    }
+
+    /**
+     * Borç Sadeleştirme Algoritması (Debt Simplification / Greedy):
+     * 1. Herkesin net bakiyesini hesapla: Net = (Toplam Ödediği) - (Tükettiği Pay)
+     * 2. Net > 0 olanlar ALACAKLI, Net < 0 olanlar BORÇLUDUR.
+     * 3. İki listeyi büyükten küçüğe sıralayarak en büyük borçludan en büyük alacaklıya transfer oluşturulur.
+     */
+    function calculateSettlement() {
+      // 1. Bakiyeleri sıfırla
+      const balances = {};
+      const totalPaid = {};
+      const totalConsumed = {};
+
+      state.people.forEach(p => {
+        balances[p.id] = 0;
+        totalPaid[p.id] = 0;
+        totalConsumed[p.id] = 0;
+      });
+
+      // 2. Harcamaları işlet
+      state.expenses.forEach(exp => {
+        const amount = Number(exp.amount) || 0;
+        // Ödeyen kişiye ekle
+        if (balances[exp.payerId] !== undefined) {
+          balances[exp.payerId] += amount;
+          totalPaid[exp.payerId] += amount;
+        }
+
+        // Tüketenlere eşit böl
+        if (exp.consumerIds && exp.consumerIds.length > 0) {
+          const splitAmount = amount / exp.consumerIds.length;
+          exp.consumerIds.forEach(cId => {
+            if (balances[cId] !== undefined) {
+              balances[cId] -= splitAmount;
+              totalConsumed[cId] += splitAmount;
+            }
+          });
+        }
+      });
+
+      // Borçlular ve Alacaklılar ayırımı
+      let debtors = [];   // Borçlu olanlar (net < -0.01)
+      let creditors = []; // Alacaklı olanlar (net > 0.01)
+
+      for (const person of state.people) {
+        const net = Math.round(balances[person.id] * 100) / 100;
+        if (net < -0.01) {
+          debtors.push({ id: person.id, name: person.name, amount: Math.abs(net) });
+        } else if (net > 0.01) {
+          creditors.push({ id: person.id, name: person.name, amount: net });
+        }
+      }
+
+      // Büyükten küçüğe sırala (Greedy Match)
+      debtors.sort((a, b) => b.amount - a.amount);
+      creditors.sort((a, b) => b.amount - a.amount);
+
+      const transfers = [];
+
+      let dIdx = 0;
+      let cIdx = 0;
+
+      while (dIdx < debtors.length && cIdx < creditors.length) {
+        const debtor = debtors[dIdx];
+        const creditor = creditors[cIdx];
+
+        const settlementAmount = Math.min(debtor.amount, creditor.amount);
+
+        if (settlementAmount > 0.01) {
+          transfers.push({
+            from: debtor.name,
+            to: creditor.name,
+            amount: settlementAmount
+          });
+        }
+
+        debtor.amount -= settlementAmount;
+        creditor.amount -= settlementAmount;
+
+        if (debtor.amount < 0.01) dIdx++;
+        if (creditor.amount < 0.01) cIdx++;
+      }
+
+      return {
+        balances,
+        totalPaid,
+        totalConsumed,
+        transfers
+      };
+    }
+
+    function render() {
+      // 1. İstatistikleri güncelle
+      const totalExpenseAmount = state.expenses.reduce((acc, cur) => acc + Number(cur.amount), 0);
+      document.getElementById('statTotalExpense').textContent = formatMoney(totalExpenseAmount);
+      document.getElementById('statTotalPeople').textContent = state.people.length;
+      document.getElementById('statTotalItems').textContent = state.expenses.length;
+      document.getElementById('badgePeopleCount').textContent = `${state.people.length} kişi`;
+      document.getElementById('badgeExpenseCount').textContent = `${state.expenses.length} kayıt`;
+
+      // 2. Kişi Listesi Rozetlerini Çiz
+      const peopleListContainer = document.getElementById('peopleListContainer');
+      peopleListContainer.innerHTML = '';
+      if (state.people.length === 0) {
+        peopleListContainer.innerHTML = `
+          <div class="text-xs text-slate-400 italic py-2">
+            Henüz kimse eklenmedi. Yukarıdan kişi ekleyerek başlayın.
+          </div>
+        `;
+      } else {
+        state.people.forEach(p => {
+          const chip = document.createElement('div');
+          chip.className = 'inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-xs font-medium px-2.5 py-1 rounded-lg transition-colors';
+          chip.innerHTML = `
+            <span>${escapeHtml(p.name)}</span>
+            <button type="button" class="text-slate-400 hover:text-rose-600 transition-colors" data-remove-person="${p.id}" title="Kişiyi Sil">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          `;
+          peopleListContainer.appendChild(chip);
+        });
+      }
+
+      // 3. Form Alanlarındaki Kişi Seçimlerini Güncelle
+      const payerSelect = document.getElementById('itemPayer');
+      const prevPayer = payerSelect.value;
+      payerSelect.innerHTML = '<option value="" disabled>Kişi Seçin</option>';
+      state.people.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = p.name;
+        payerSelect.appendChild(opt);
+      });
+      // Önceden seçili kişi hala varsa koru
+      if (state.people.some(p => p.id === prevPayer)) {
+        payerSelect.value = prevPayer;
+      } else if (state.people.length > 0) {
+        payerSelect.value = state.people[0].id;
+      }
+
+      // 4. "Ortak Olanlar" Checkbox Listesini Güncelle
+      const consumerCheckboxes = document.getElementById('consumerCheckboxes');
+      const selectedConsumers = new Set(
+        Array.from(consumerCheckboxes.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value)
+      );
+
+      consumerCheckboxes.innerHTML = '';
+      if (state.people.length === 0) {
+        consumerCheckboxes.innerHTML = `<span class="text-xs text-slate-400 p-2">Lütfen önce kişi ekleyin.</span>`;
+      } else {
+        state.people.forEach(p => {
+          const isChecked = selectedConsumers.size === 0 ? true : selectedConsumers.has(p.id);
+          const label = document.createElement('label');
+          label.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-xs font-medium text-slate-700 cursor-pointer hover:bg-slate-100 select-none transition-all';
+          label.innerHTML = `
+            <input type="checkbox" name="consumers" value="${p.id}" ${isChecked ? 'checked' : ''} class="rounded text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 border-slate-300">
+            <span>${escapeHtml(p.name)}</span>
+          `;
+          consumerCheckboxes.appendChild(label);
+        });
+      }
+
+      // 5. Harcamalar Listesini Çiz
+      const expensesList = document.getElementById('expensesList');
+      expensesList.innerHTML = '';
+      if (state.expenses.length === 0) {
+        expensesList.innerHTML = `
+          <div class="text-center py-8 text-slate-400 border-2 border-dashed border-slate-100 rounded-xl">
+            <svg class="w-10 h-10 mx-auto text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+            <p class="text-sm">Henüz eklenmiş bir harcama yok.</p>
+            <p class="text-xs text-slate-400 mt-1">Sol kısımdaki formdan aldığınız ürünleri ekleyebilirsiniz.</p>
+          </div>
+        `;
+      } else {
+        state.expenses.forEach(exp => {
+          const payer = state.people.find(p => p.id === exp.payerId);
+          const payerName = payer ? payer.name : 'Bilinmeyen Kişi';
+
+          const consumerNames = exp.consumerIds
+            .map(id => {
+              const p = state.people.find(item => item.id === id);
+              return p ? p.name : null;
+            })
+            .filter(Boolean);
+
+          const costPerHead = exp.consumerIds.length > 0 ? (exp.amount / exp.consumerIds.length) : 0;
+
+          const itemEl = document.createElement('div');
+          itemEl.className = 'group relative p-3.5 bg-slate-50 hover:bg-indigo-50/40 rounded-xl border border-slate-200/80 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3';
+          itemEl.innerHTML = `
+            <div class="space-y-1">
+              <div class="flex items-center gap-2">
+                <span class="font-semibold text-slate-800 text-sm">${escapeHtml(exp.title)}</span>
+                <span class="text-xs px-2 py-0.5 rounded-md bg-indigo-100/70 text-indigo-700 font-medium">
+                  Ödeyen: ${escapeHtml(payerName)}
+                </span>
+              </div>
+              <div class="text-xs text-slate-500 flex flex-wrap items-center gap-1.5">
+                <span>Ortaklar (${exp.consumerIds.length}):</span>
+                <span class="text-slate-700 font-medium">${escapeHtml(consumerNames.join(', '))}</span>
+                <span class="text-slate-400">&bull; Kişi başı: ${formatMoney(costPerHead)}</span>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-200/60">
+              <span class="font-bold text-slate-900 text-base">${formatMoney(exp.amount)}</span>
+              <button type="button" data-remove-expense="${exp.id}" class="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-white transition-colors" title="Sil">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              </button>
+            </div>
+          `;
+          expensesList.appendChild(itemEl);
+        });
+      }
+
+      // 6. Bakiyeler ve Takas Planı Hesaplama & Gösterme
+      const settlement = calculateSettlement();
+      const balancesTableBody = document.getElementById('balancesTableBody');
+      balancesTableBody.innerHTML = '';
+
+      if (state.people.length === 0) {
+        balancesTableBody.innerHTML = `
+          <tr>
+            <td colspan="4" class="text-center py-4 text-xs text-slate-400">Veri bulunmuyor.</td>
+          </tr>
+        `;
+      } else {
+        state.people.forEach(p => {
+          const paid = settlement.totalPaid[p.id] || 0;
+          const consumed = settlement.totalConsumed[p.id] || 0;
+          const net = paid - consumed;
+
+          let badgeClass = 'text-slate-500 bg-slate-100';
+          let statusText = '0 ₺ (Dengede)';
+
+          if (net > 0.01) {
+            badgeClass = 'text-emerald-700 bg-emerald-50 border border-emerald-200';
+            statusText = `+${formatMoney(net)} (Alacaklı)`;
+          } else if (net < -0.01) {
+            badgeClass = 'text-rose-700 bg-rose-50 border border-rose-200';
+            statusText = `${formatMoney(net)} (Borçlu)`;
+          }
+
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-slate-50/80 transition-colors';
+          tr.innerHTML = `
+            <td class="py-2.5 px-3 font-medium text-slate-800">${escapeHtml(p.name)}</td>
+            <td class="py-2.5 px-3 text-right text-slate-600">${formatMoney(paid)}</td>
+            <td class="py-2.5 px-3 text-right text-slate-600">${formatMoney(consumed)}</td>
+            <td class="py-2.5 px-3 text-right">
+              <span class="inline-block text-xs font-semibold px-2 py-0.5 rounded-md ${badgeClass}">
+                ${statusText}
+              </span>
+            </td>
+          `;
+          balancesTableBody.appendChild(tr);
+        });
+      }
+
+      // 7. Sadeleştirilmiş Transfer Listesini Çiz
+      const settlementsContainer = document.getElementById('settlementsContainer');
+      settlementsContainer.innerHTML = '';
+
+      if (settlement.transfers.length === 0) {
+        settlementsContainer.innerHTML = `
+          <div class="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs flex items-center gap-2">
+            <svg class="w-5 h-5 text-emerald-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span>Harika! Kimsenin kimseye borcu kalmadı veya henüz harcama girilmedi.</span>
+          </div>
+        `;
+      } else {
+        settlement.transfers.forEach(t => {
+          const card = document.createElement('div');
+          card.className = 'p-3 bg-gradient-to-r from-slate-50 to-indigo-50/30 border border-slate-200 rounded-xl flex items-center justify-between text-xs sm:text-sm';
+          card.innerHTML = `
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-semibold text-rose-600">${escapeHtml(t.from)}</span>
+              <span class="text-slate-400">ödeyecek &rarr;</span>
+              <span class="font-semibold text-emerald-600">${escapeHtml(t.to)}</span>
+            </div>
+            <div class="font-bold text-slate-900 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-xs">
+              ${formatMoney(t.amount)}
+            </div>
+          `;
+          settlementsContainer.appendChild(card);
+        });
+      }
+    }
+
+    // Güvenlik: XSS koruması için string temizleyici
+    function escapeHtml(string) {
+      if (!string) return '';
+      return String(string)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Form Dinleyicisi: Kişi Ekleme
+    document.getElementById('personForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = document.getElementById('personNameInput');
+      const name = input.value.trim();
+
+      if (!name) return;
+
+      // Aynı isimde kişi var mı kontrolü
+      if (state.people.some(p => p.name.toLocaleLowerCase('tr') === name.toLocaleLowerCase('tr'))) {
+        showToast('Bu isimde bir kişi zaten grupta var!', '⚠️');
+        return;
+      }
+
+      state.people.push({
+        id: generateId(),
+        name: name
+      });
+
+      input.value = '';
+      saveState();
+      render();
+      showToast(`${name} gruba eklendi!`, '👤');
+    });
+
+    // Form Dinleyicisi: Harcama Ekleme
+    document.getElementById('expenseForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      if (state.people.length === 0) {
+        showToast('Lütfen önce en az bir kişi ekleyin!', '⚠️');
+        return;
+      }
+
+      const titleInput = document.getElementById('itemTitle');
+      const amountInput = document.getElementById('itemAmount');
+      const payerSelect = document.getElementById('itemPayer');
+
+      const title = titleInput.value.trim();
+      const amount = parseFloat(amountInput.value);
+      const payerId = payerSelect.value;
+
+      // Seçili ortakları al
+      const selectedBoxes = Array.from(document.querySelectorAll('#consumerCheckboxes input[type="checkbox"]:checked'));
+      const consumerIds = selectedBoxes.map(cb => cb.value);
+
+      if (!title) {
+        showToast('Lütfen ürün veya masraf başlığı girin!', '⚠️');
+        return;
+      }
+
+      if (isNaN(amount) || amount <= 0) {
+        showToast('Geçerli bir tutar giriniz!', '⚠️');
+        return;
+      }
+
+      if (!payerId) {
+        showToast('Lütfen ödeyen kişiyi seçin!', '⚠️');
+        return;
+      }
+
+      if (consumerIds.length === 0) {
+        showToast('Lütfen bu masrafa en az 1 ortak kişi seçin!', '⚠️');
+        return;
+      }
+
+      // Masraf nesnesini oluştur ve kaydet
+      state.expenses.push({
+        id: generateId(),
+        title: title,
+        amount: amount,
+        payerId: payerId,
+        consumerIds: consumerIds
+      });
+
+      // Formu temizle
+      titleInput.value = '';
+      amountInput.value = '';
+      titleInput.focus();
+
+      saveState();
+      render();
+      showToast('Harcama kaydedildi!', '🧾');
+    });
+
+    // Ortakları Tümünü Seç / Temizle Butonları
+    document.getElementById('btnSelectAllConsumers').addEventListener('click', () => {
+      document.querySelectorAll('#consumerCheckboxes input[type="checkbox"]').forEach(cb => cb.checked = true);
+    });
+
+    document.getElementById('btnClearConsumers').addEventListener('click', () => {
+      document.querySelectorAll('#consumerCheckboxes input[type="checkbox"]').forEach(cb => cb.checked = false);
+    });
+
+    // Dinamik Silme Aksiyonları (Event Delegation)
+    document.addEventListener('click', (e) => {
+      // 1. Kişi Silme
+      const removePersonBtn = e.target.closest('[data-remove-person]');
+      if (removePersonBtn) {
+        const pId = removePersonBtn.getAttribute('data-remove-person');
+        const pObj = state.people.find(p => p.id === pId);
+        const name = pObj ? pObj.name : 'Kişi';
+
+        // Kişiyi çıkar
+        state.people = state.people.filter(p => p.id !== pId);
+
+        // Kişiye ait harcamaları veya ortaklıkları da güncelle
+        state.expenses = state.expenses.filter(exp => exp.payerId !== pId);
+        state.expenses.forEach(exp => {
+          exp.consumerIds = exp.consumerIds.filter(id => id !== pId);
+        });
+        // Ortaksız kalan masrafları temizle
+        state.expenses = state.expenses.filter(exp => exp.consumerIds.length > 0);
+
+        saveState();
+        render();
+        showToast(`${name} ve ilişkili harcamaları silindi.`, '🗑️');
+        return;
+      }
+
+      // 2. Harcama Silme
+      const removeExpenseBtn = e.target.closest('[data-remove-expense]');
+      if (removeExpenseBtn) {
+        const eId = removeExpenseBtn.getAttribute('data-remove-expense');
+        state.expenses = state.expenses.filter(exp => exp.id !== eId);
+        saveState();
+        render();
+        showToast('Harcama kaydı silindi.', '🗑️');
+      }
+    });
+
+    // Örnek Veri Yükleme
+    document.getElementById('btnSampleData').addEventListener('click', () => {
+      const p1 = generateId();
+      const p2 = generateId();
+      const p3 = generateId();
+      const p4 = generateId();
+
+      state.people = [
+        { id: p1, name: 'Ahmet' },
+        { id: p2, name: 'Ayşe' },
+        { id: p3, name: 'Mehmet' },
+        { id: p4, name: 'Zeynep' }
+      ];
+
+      state.expenses = [
+        {
+          id: generateId(),
+          title: 'Süpermarket Temel Gıda',
+          amount: 600,
+          payerId: p1, // Ahmet ödedi
+          consumerIds: [p1, p2, p3, p4] // Herkes ortak
+        },
+        {
+          id: generateId(),
+          title: 'Akşam Yemeği & Pizza',
+          amount: 800,
+          payerId: p2, // Ayşe ödedi
+          consumerIds: [p1, p2, p3] // Ahmet, Ayşe, Mehmet ortak (Zeynep yemedi)
+        },
+        {
+          id: generateId(),
+          title: 'Meyve & Tatlı',
+          amount: 300,
+          payerId: p4, // Zeynep ödedi
+          consumerIds: [p2, p4] // Ayşe ve Zeynep ortak
+        }
+      ];
+
+      saveState();
+      render();
+      showToast('Örnek veriler başarıyla yüklendi!', '💡');
+    });
+
+    // Tümünü Sıfırla
+    document.getElementById('btnClearAll').addEventListener('click', () => {
+      state = { people: [], expenses: [] };
+      saveState();
+      render();
+      showToast('Tüm liste temizlendi.', '🧹');
+    });
+
+    // Başlangıç Yüklemesi
+    window.addEventListener('DOMContentLoaded', () => {
+      loadState();
+      render();
+    });
+  </script>
+</body>
+</html>
