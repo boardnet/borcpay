@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hesap-app-v1';
+const CACHE_NAME = 'hesap-app-v1.1';
 const ASSETS = [
   './index.html',
   './manifest.json',

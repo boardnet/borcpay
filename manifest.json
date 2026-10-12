@@ -1,14 +1,14 @@
 {
-  "name": "Hesap Paylaştırıcı",
-  "short_name": "HesapPay",
+  "name": "BorchPay",
+  "short_name": "BorchPay",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0f172a",
-  "theme_color": "#6366f1",
+  "theme_color": "#d6782b",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/2331/2331970.png",
+      "src": "logo.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
